@@ -1,0 +1,149 @@
+ clear all
+ close all
+ clc
+
+%% Dados topográficos
+
+M = csvread('Trajeto47.csv',1,2);   % Leitura de arquivos no Excel (lembrar de colocar o código e o arquivo.csv na mesma pasta)
+
+
+x_r  = M(:,2)*1000;             % Transformar x em kilometros para metros
+y_r = M(:,1);                   % Posição em y
+
+
+%% Tensão da linha: Exemplo: 138 kV -> Distância vertical mínima = 8,3m (Rodovia)
+
+y_zs = y_r + 8.3;               % posição em y para definição de zona segura
+
+plot(x_r,y_r,'b',x_r,y_zs,'r'); % plotar gráfico do relevo e zona segura
+
+hold on                        
+
+%% Posicionamento das torres
+
+xt1 = 0;    
+xt2 = 418;
+altura_torres = 22;
+
+i_t1 = find(x_r == xt1);
+i_t2 = find(x_r == xt2);
+
+yt1 = y_r(i_t1)+ altura_torres;
+yt2 = y_r(i_t2)+ altura_torres;
+
+T1 = [xt1 y_r(i_t1);xt1 yt1];
+T2 = [xt2 y_r(i_t2);xt2 yt2];
+
+plot(T1(:,1), T1(:,2),'k');
+plot(T2(:,1), T2(:,2),'k');
+
+xt3 = 418;    
+xt4 = 826;
+altura_torres = 22;
+
+i_t3 = find(x_r == xt3);
+i_t4 = find(x_r == xt4);
+
+yt3 = y_r(i_t3)+ altura_torres;
+yt4 = y_r(i_t4)+ altura_torres;
+
+T3 = [xt3 y_r(i_t3);xt3 yt3];
+T4 = [xt4 y_r(i_t4);xt4 yt4];
+
+plot(T3(:,1), T3(:,2),'k');
+plot(T4(:,1), T4(:,2),'k');
+
+xt5 = 826;    
+xt6 = 1234;
+altura_torres = 22;
+
+i_t5 = find(x_r == xt5);
+i_t6 = find(x_r == xt6);
+
+yt5 = y_r(i_t5)+ altura_torres;
+yt6 = y_r(i_t6)+ altura_torres;
+
+T5 = [xt5 y_r(i_t5);xt5 yt5];
+T6 = [xt6 y_r(i_t6);xt6 yt6];
+
+plot(T5(:,1), T5(:,2),'k');
+plot(T6(:,1), T6(:,2),'k');
+
+%% Equações da catenária
+%Cabo escolhido: BOBOLINK rated strength:168.6kN ; Weight: 2403 Kg/Km
+
+Tmax = 168600;       % rated strength
+Tlimit = 0.25*Tmax;  % limite máximo de 25%
+T0 = 0.247*Tmax;     % valor adotado no projeto (<25%)
+ms = 2403/1000*9.81; % peso em N/m
+
+fun = @(x0) yt1 - yt2 - T0/ms*(cosh(ms/T0*(xt1-x0))-cosh(ms/T0*(xt2-x0)));  % catenária escrita em função de x0
+
+x0 = fzero(fun, (xt1+xt2)/2);    % achar a raiz x0 da função fun supondo que o valor inicial será próximo a xt1
+
+y0 = yt1 - T0/ms*(cosh(ms/T0*(xt1-x0))-1); % achar o valor de y0
+
+fun1 = @(x1) yt3 - yt4 - T0/ms*(cosh(ms/T0*(xt3-x1))-cosh(ms/T0*(xt4-x1)));  % catenária escrita em função de x0
+
+x1 = fzero(fun1, (xt3+xt4)/2);    % achar a raiz x0 da função fun supondo que o valor inicial será próximo a xt1
+
+y1 = yt3 - T0/ms*(cosh(ms/T0*(xt3-x1))-1); % achar o valor de y0
+
+fun2 = @(x2) yt5 - yt6 - T0/ms*(cosh(ms/T0*(xt5-x2))-cosh(ms/T0*(xt6-x2)));  % catenária escrita em função de x0
+
+x2 = fzero(fun2, (xt5+xt6)/2);    % achar a raiz x0 da função fun supondo que o valor inicial será próximo a xt1
+
+y2 = yt5 - T0/ms*(cosh(ms/T0*(xt5-x2))-1); % achar o valor de y0
+
+
+%% Vetores com as coordenadas da catenária com a posição mais baixa na origem
+catenaria_x = xt1-x0:xt2-x0;                       % definição dos pontos em x da catenária 
+catenaria_y = T0/ms*(cosh(ms/T0*(catenaria_x))-1); % definição dos pontos m y da catenária
+
+% Vetores com as coordenadas da catenária na posição real
+catenaria_pos_real_x = catenaria_x + x0;
+catenaria_pos_real_y = catenaria_y + y0;
+
+% Plotagem da catenária entre as torres
+plot(catenaria_pos_real_x, catenaria_pos_real_y,'m');
+
+catenaria_x1 = xt3-x1:xt4-x1;                       % definição dos pontos em x da catenária 
+catenaria_y1 = T0/ms*(cosh(ms/T0*(catenaria_x1))-1); % definição dos pontos m y da catenária
+
+% Vetores com as coordenadas da catenária na posição real
+catenaria_pos_real_x1 = catenaria_x1 + x1;
+catenaria_pos_real_y1 = catenaria_y1 + y1;
+
+% Plotagem da catenária entre as torres
+plot(catenaria_pos_real_x1, catenaria_pos_real_y1,'m');
+
+catenaria_x2 = xt5-x2:xt6-x2;                       % definição dos pontos em x da catenária 
+catenaria_y2 = T0/ms*(cosh(ms/T0*(catenaria_x2))-1); % definição dos pontos m y da catenária
+
+% Vetores com as coordenadas da catenária na posição real
+catenaria_pos_real_x2 = catenaria_x2 + x2;
+catenaria_pos_real_y2 = catenaria_y2 + y2;
+
+% Plotagem da catenária entre as torres
+plot(catenaria_pos_real_x2, catenaria_pos_real_y2,'m');
+
+%% Cálculo da tração em cada ponto da catenária
+T = T0 + catenaria_y*ms;
+
+figure
+
+T_limite = Tlimit*ones(length(catenaria_x)); % valor limite (25% da tração)
+
+plot(catenaria_x, T, 'b', catenaria_x, T_limite,'r'); % plotagem da tração em cada ponto e do valor limite
+
+S = T0/ms*(sinh(ms/T0*(xt2-x0))-sinh(ms/T0*(xt1-x0))); % equação para encontrar o comprimento da catenária.
+
+T1 = T0 + catenaria_y1*ms;
+
+figure
+
+T1_limite = Tlimit*ones(length(catenaria_x1)); % valor limite (25% da tração)
+
+plot(catenaria_x1, T1, 'b', catenaria_x1, T1_limite,'r'); % plotagem da tração em cada ponto e do valor limite
+
+S = T0/ms*(sinh(ms/T0*(xt4-x0))-sinh(ms/T0*(xt3-x0))); % equação para encontrar o comprimento da catenária.
